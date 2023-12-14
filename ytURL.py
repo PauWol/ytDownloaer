@@ -47,3 +47,4 @@ if __name__ == '__main__':
         main()
     except Exception as e:
         print('Error: {0}'.format(e))
+    input('Press ENTER to exit')
