@@ -1,4 +1,4 @@
-import re ,os, pytube ,urllib
+import re ,os, pytube ,urllib, tempfile
 
 def search_youtube(query):
     query = query.replace(' ', '+')
@@ -11,32 +11,24 @@ class Video(object):
     def __init__(self,url): self.url = url
 
     def download_url(self):
+        temp_file = tempfile.NamedTemporaryFile()
         yt = pytube.YouTube(self.url)
         audio = yt.streams.filter(only_audio=True).first()
-        name = audio.title
-        audio.download('./')
-        self.file_url =  audio.get_file_path(name) + '.mp4'
+        temp_file.write(audio.download().encode('utf-8'))
+        temp_file.seek(0)
+        self.temp_file =  temp_file.read()#audio.get_file_path(name) + '.mp4'
 
     def play_Url(self):
-        if os.path.exists(self.file_url):
+        if self.temp_file:
             from os import startfile
-            startfile(self.file_url)
+            startfile(self.temp_file)
         else:
-            print('Something went wrong!\nCouldn`t find file {0}'.format(self.file_url))
+            print('Something went wrong!\nCouldn`t find file {0}'.format(self.temp_file))
 
     def delete_file(self):
-        if os.path.exists(self.file_url):
-            os.remove(self.file_url)
+        if self.temp_file:
+            os.remove(self.temp_file)
 
-    def file_already_exsistent(self):
-        yt = pytube.YouTube(self.url)
-        audio = yt.streams.filter(only_audio=True).first()
-        name = audio.title
-        if os.path.isfile('./'+name+'.mp4'):
-            self.file_url =  audio.get_file_path(name) + '.mp4'
-            return True
-        else:
-            return False
 def main():
     inp = input('Search for a Video:')
     url = search_youtube(inp)
@@ -44,12 +36,14 @@ def main():
     play = input('Want to play?(y/n)')
     if play == 'y':
         video = Video(url)
-        if not video.file_already_exsistent():
-            video.download_url()
+        video.download_url()
         video.play_Url()
-    delet = input('Want to delete the file(y/n)')
-    if delet == 'y':
-        video.delete_file()
+        delet = input('Want to delete the file(y/n)')
+        if delet == 'y':
+            video.delete_file()
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as e:
+        print('Error: {0}'.format(e))
